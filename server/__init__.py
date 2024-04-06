@@ -37,6 +37,7 @@ def firebase():
     print("firebase connected", ref.get())
 
 from pokerlib import Table , Player, PlayerSeats
+from pokerlib.enums import RoundPublicInId, TablePublicInId
 
 class MyTable(Table):
     def publicOut(self, _id, **kwargs):
@@ -46,7 +47,7 @@ class MyTable(Table):
 
 def game():
     # define a new table
-    table = Table(
+    table = MyTable(
         _id=0, 
         # table_id = 0,
         seats = PlayerSeats([None] * 9),
@@ -72,6 +73,23 @@ def game():
     # seat player2 at the first free seat
     table += player2
 
+    # table.publicIn(player1.id, TablePublicInId.STARTROUND)
+    table.publicIn(player1.id, TablePublicInId.STARTROUND)
+    print("calling")
+    table.publicIn(player1.id, RoundPublicInId.CALL)
+    print("checking")
+    table.publicIn(player2.id, RoundPublicInId.CHECK)
+    print("checking")
+    table.publicIn(player1.id, RoundPublicInId.CHECK)
+    print("raising")
+    table.publicIn(player2.id, RoundPublicInId.RAISE, raise_by=50)
+    print("calling")
+    table.publicIn(player1.id, RoundPublicInId.CALL)
+    table.publicIn(player1.id, RoundPublicInId.CHECK)
+    table.publicIn(player2.id, RoundPublicInId.CHECK)
+    table.publicIn(player1.id, RoundPublicInId.ALLIN)
+    table.publicIn(player2.id, RoundPublicInId.CALL)
+
     print(table)
 
 class PokerBot(fp.PoeBot):
@@ -86,21 +104,31 @@ class PokerBot(fp.PoeBot):
         ref = db.reference('/hello')
         print("firebase connected", ref.get())
         
+        yield fp.MetaResponse(
+            text="",
+            content_type="text/markdown",
+            linkify=True,
+            refetch_settings=False,
+            suggested_replies=False
+        )
 
         # game
         game()
 
-        last_message = request.query[-1].content.lower()
-        response_content_type = (
-            "text/plain" if "plain" in last_message else "text/markdown"
-        )
-        yield fp.MetaResponse(
-            text="",
-            content_type=response_content_type,
-            linkify=True,
-            refetch_settings=False,
-            suggested_replies="dog" not in last_message,
-        )
+        yield fp.PartialResponse(text="# Welcome to PlayPoker \n\n")
+
+
+        # last_message = request.query[-1].content.lower()
+        # response_content_type = (
+        #     "text/plain" if "plain" in last_message else "text/markdown"
+        # )
+        # yield fp.MetaResponse(
+        #     text="",
+        #     content_type=response_content_type,
+        #     linkify=True,
+        #     refetch_settings=False,
+        #     suggested_replies="dog" not in last_message,
+        # )
 
     async def on_feedback(self, feedback_request: fp.ReportFeedbackRequest) -> None:
         """Called when we receive user feedback such as likes."""
