@@ -1,0 +1,34 @@
+{
+    "players": [
+        {
+            "player_id": 0,
+            "total": 100,
+            "cards": null
+        },
+        {
+            "player_id": 1,
+            "total": 100,
+            "cards": [
+                {"type": "ACE", "suite": "SPADES"},
+                {"type": "10", "suite": "SPADES"}
+            ]
+        }
+    ],
+    "game": [
+         {
+            "event": "SMALLBLIND",
+            "player_id": 0,
+            "raise": 1
+        },
+         {
+            "event": "BIGBLIND",
+            "player_id": 1,
+            "raise": 2
+        },
+        {
+            "event": "RAISE",
+            "player_id": 0,
+            "raise": 5
+        }
+    ]
+}
