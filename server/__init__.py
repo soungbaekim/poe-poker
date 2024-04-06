@@ -23,8 +23,56 @@ from firebase_admin import db
 # Fetch the service account key JSON file contents
 # cred = credentials.Certificate('path/to/serviceAccountKey.json')
 
+def firebase():
+    cred = credentials.Certificate('/firebase/key.json')
 
+    # Initialize the app with a None auth variable, limiting the server's access
+    firebase_admin.initialize_app(cred, {
+        'databaseURL': 'https://poe-poker-default-rtdb.firebaseio.com',
+        'databaseAuthVariableOverride': None
+    })
 
+    # The app only has access to public data as defined in the Security Rules
+    ref = db.reference('/hello')
+    print("firebase connected", ref.get())
+
+from pokerlib import Table , Player, PlayerSeats
+
+class MyTable(Table):
+    def publicOut(self, _id, **kwargs):
+        print(_id, kwargs)
+    def privateOut(self, _id, player, **kwargs):
+        print(_id, player, kwargs)
+
+def game():
+    # define a new table
+    table = Table(
+        _id=0, 
+        # table_id = 0,
+        seats = PlayerSeats([None] * 9),
+        buyin = 100,
+        small_blind = 5,
+        big_blind = 10
+    )
+
+    player1 = Player(
+        table_id = table.id,
+        _id = 1,
+        name = 'alice',
+        money = table.buyin
+    )
+    player2 = Player(
+        table_id = table.id,
+        _id = 2,
+        name = 'bob',
+        money = table.buyin
+    )
+    # seat player1 at the first seat
+    table += player1, 0
+    # seat player2 at the first free seat
+    table += player2
+
+    print(table)
 
 class PokerBot(fp.PoeBot):
     async def get_response(
@@ -33,17 +81,14 @@ class PokerBot(fp.PoeBot):
         """Return an async iterator of events to send to the user."""
         print(request)
 
-        cred = credentials.Certificate('/firebase/key.json')
+        firebase()
 
-        # Initialize the app with a None auth variable, limiting the server's access
-        firebase_admin.initialize_app(cred, {
-            'databaseURL': 'https://poe-poker-default-rtdb.firebaseio.com',
-            'databaseAuthVariableOverride': None
-        })
-
-        # The app only has access to public data as defined in the Security Rules
         ref = db.reference('/hello')
-        print(ref.get())
+        print("firebase connected", ref.get())
+        
+
+        # game
+        game()
 
         last_message = request.query[-1].content.lower()
         response_content_type = (
@@ -71,7 +116,7 @@ class PokerBot(fp.PoeBot):
         )
 
 
-REQUIREMENTS = ["fastapi-poe==0.0.36", "firebase-admin"]
+REQUIREMENTS = ["fastapi-poe==0.0.36", "firebase-admin", "pokerlib==2.2.6"]
 image = Image.debian_slim().pip_install(*REQUIREMENTS)
 stub = Stub("pokerbot-poe")
 
