@@ -20,6 +20,8 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import db
 
+import json
+
 # Fetch the service account key JSON file contents
 # cred = credentials.Certificate('path/to/serviceAccountKey.json')
 
@@ -96,21 +98,43 @@ class PokerBot(fp.PoeBot):
     async def get_response(
         self, request: fp.QueryRequest
     ) -> AsyncIterable[fp.PartialResponse]:
-        """Return an async iterator of events to send to the user."""
-        print(request)
-
-        firebase()
-
-        ref = db.reference('/hello')
-        print("firebase connected", ref.get())
-        
         yield fp.MetaResponse(
             text="",
-            content_type="text/markdown",
+            content_type="text/plain",
             linkify=True,
             refetch_settings=False,
             suggested_replies=False
         )
+
+        print("*** REQUEST ***", request)
+
+        all = ""
+        async for msg in fp.stream_request(
+            request, "PokerExpert", request.access_key
+        ):
+            all += msg.text
+            # yield msg
+        
+        print('*** RESPONSE ***', all)
+        response = json.loads(all)
+
+        print('*** EVENT ***', response["event"])
+
+        """Return an async iterator of events to send to the user."""
+        print(request)
+
+        # firebase()
+
+        # ref = db.reference('/hello')
+        # print("firebase connected", ref.get())
+        
+        # yield fp.MetaResponse(
+        #     text="",
+        #     content_type="text/markdown",
+        #     linkify=True,
+        #     refetch_settings=False,
+        #     suggested_replies=False
+        # )
 
         # game
         game()
@@ -140,7 +164,7 @@ class PokerBot(fp.PoeBot):
     async def get_settings(self, setting: fp.SettingsRequest) -> fp.SettingsResponse:
         """Return the settings for this bot."""
         return fp.SettingsResponse(
-            allow_user_context_clear=True, allow_attachments=True
+            allow_user_context_clear=True, allow_attachments=True, server_bot_dependencies={"PokerExpert": 1}
         )
 
 

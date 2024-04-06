@@ -45,7 +45,7 @@ The message will be given as a json. `player_id` field specifies which player yo
 ```
 
 # Reply Format
-Reply to each message in the following json format. Do not reply with anything else -- no explanation, no reasoning. Only the json object:
+ALWAYS reply to each message in the following json format. Do not reply with anything else -- no explanation, no reasoning. Only the json object:
 
 ```json
 {
