@@ -47,52 +47,74 @@ class MyTable(Table):
     def privateOut(self, _id, player, **kwargs):
         print(_id, player, kwargs)
 
-def game():
-    # define a new table
-    table = MyTable(
-        _id=0, 
-        # table_id = 0,
-        seats = PlayerSeats([None] * 9),
-        buyin = 100,
-        small_blind = 5,
-        big_blind = 10
-    )
+# def start():
+    
 
-    player1 = Player(
-        table_id = table.id,
-        _id = 1,
-        name = 'alice',
-        money = table.buyin
-    )
-    player2 = Player(
-        table_id = table.id,
-        _id = 2,
-        name = 'bob',
-        money = table.buyin
-    )
-    # seat player1 at the first seat
-    table += player1, 0
-    # seat player2 at the first free seat
-    table += player2
+# def game():
+#     # define a new table
+#     table = MyTable(
+#         _id=0, 
+#         # table_id = 0,
+#         seats = PlayerSeats([None] * 9),
+#         buyin = 100,
+#         small_blind = 5,
+#         big_blind = 10
+#     )
 
-    # table.publicIn(player1.id, TablePublicInId.STARTROUND)
-    table.publicIn(player1.id, TablePublicInId.STARTROUND)
-    print("calling")
-    table.publicIn(player1.id, RoundPublicInId.CALL)
-    print("checking")
-    table.publicIn(player2.id, RoundPublicInId.CHECK)
-    print("checking")
-    table.publicIn(player1.id, RoundPublicInId.CHECK)
-    print("raising")
-    table.publicIn(player2.id, RoundPublicInId.RAISE, raise_by=50)
-    print("calling")
-    table.publicIn(player1.id, RoundPublicInId.CALL)
-    table.publicIn(player1.id, RoundPublicInId.CHECK)
-    table.publicIn(player2.id, RoundPublicInId.CHECK)
-    table.publicIn(player1.id, RoundPublicInId.ALLIN)
-    table.publicIn(player2.id, RoundPublicInId.CALL)
+#     player1 = Player(
+#         table_id = table.id,
+#         _id = 1,
+#         name = 'alice',
+#         money = table.buyin
+#     )
+#     player2 = Player(
+#         table_id = table.id,
+#         _id = 2,
+#         name = 'bob',
+#         money = table.buyin
+#     )
+#     # seat player1 at the first seat
+#     table += player1, 0
+#     # seat player2 at the first free seat
+#     table += player2
 
-    print(table)
+#     # table.publicIn(player1.id, TablePublicInId.STARTROUND)
+#     table.publicIn(player1.id, TablePublicInId.STARTROUND)
+#     print("calling")
+#     table.publicIn(player1.id, RoundPublicInId.CALL)
+#     print("checking")
+#     table.publicIn(player2.id, RoundPublicInId.CHECK)
+#     print("checking")
+#     table.publicIn(player1.id, RoundPublicInId.CHECK)
+#     print("raising")
+#     table.publicIn(player2.id, RoundPublicInId.RAISE, raise_by=50)
+#     print("calling")
+#     table.publicIn(player1.id, RoundPublicInId.CALL)
+#     table.publicIn(player1.id, RoundPublicInId.CHECK)
+#     table.publicIn(player2.id, RoundPublicInId.CHECK)
+#     table.publicIn(player1.id, RoundPublicInId.ALLIN)
+#     table.publicIn(player2.id, RoundPublicInId.CALL)
+
+#     print(table)
+
+import pickle
+# import marshal
+
+def marshal(name, data):
+    with open(f"/firebase/{name}.json", "wb") as f:
+        pickle.dump(data, f)
+        # f.write("hello")
+    vol.commit()
+
+def unmarshal(name):
+    with open(f"/firebase/{name}.json", "rb") as f:
+        return pickle.load(f)
+
+def save(table, user, bot):
+    marshal("user_cards", user)
+    marshal("bot_cards", bot.cards)
+    marshal("pot_size", table.round.pot_size)
+    vol.commit()
 
 class PokerBot(fp.PoeBot):
     async def get_response(
@@ -100,28 +122,89 @@ class PokerBot(fp.PoeBot):
     ) -> AsyncIterable[fp.PartialResponse]:
         yield fp.MetaResponse(
             text="",
-            content_type="text/plain",
+            content_type="text/markdown",
             linkify=True,
             refetch_settings=False,
             suggested_replies=False
         )
 
+        # define a new table
+        table = MyTable(
+            _id=0, 
+            # table_id = 0,
+            seats = PlayerSeats([None] * 2),
+            buyin = 100,
+            small_blind = 5,
+            big_blind = 10
+        )
+
+        user = Player(
+            table_id = table.id,
+            _id = 1,
+            name = 'user',
+            money = table.buyin
+        )
+
+        bot = Player(
+            table_id = table.id,
+            _id = 2,
+            name = 'bot',
+            money = table.buyin
+        )
+
+        # seat player1 at the first seat
+        table += user, 0
+        # seat player2 at the first free seat
+        table += bot
+
+        print("*** TABLE SETUP ***", table)
+        table.publicIn(None, TablePublicInId.STARTROUND)
+
+        # cards = unmarshal("user_cards")
+        # print("*** CARDS ***", cards)
+
+        # pot_size = unmarshal("pot_size")
+        # table.round.pot_size = pot_size
+
+        # user.cards = cards
+        # print("*** USER CARDS ***", user.cards)
+        
+        # table.publicIn(None, TablePublicInId.STARTROUND)
+
+        yield fp.PartialResponse(text=f"# PlayPoker \n\nBuy-in: {table.buyin}\n\n")
+
+
+        yield fp.PartialResponse(text=f"## Preflop\n\nYou have {user.cards}\n\nYou have ${user.money}. I have ${bot.money}\n\nThe pot is {table.round.pot_size}")
+
+        # last_message = request.query[-1].content.lower()
+        # if "start" in last_message:
+        #     table.publicIn(None, TablePublicInId.STARTROUND)
+
+        print("*** START ROUND ***", table)
+
+
+        print("*** SAVING TABLE ***")
+        # save(table, cards, bot)
+        # save(table)
+
         print("*** REQUEST ***", request)
 
-        all = ""
-        async for msg in fp.stream_request(
-            request, "PokerExpert", request.access_key
-        ):
-            all += msg.text
-            # yield msg
+        # all = ""
+        # async for msg in fp.stream_request(
+        #     request, "PokerExpert", request.access_key
+        # ):
+        #     all += msg.text
+        #     # yield msg
         
-        print('*** RESPONSE ***', all)
-        response = json.loads(all)
+        # print('*** RESPONSE ***', all)
+        # response = json.loads(all)
 
-        print('*** EVENT ***', response["event"])
+        # yield all
 
-        """Return an async iterator of events to send to the user."""
-        print(request)
+        # print('*** EVENT ***', response["event"])
+
+        # """Return an async iterator of events to send to the user."""
+        # print(request)
 
         # firebase()
 
@@ -137,9 +220,9 @@ class PokerBot(fp.PoeBot):
         # )
 
         # game
-        game()
+        # game()
 
-        yield fp.PartialResponse(text="# Welcome to PlayPoker \n\n")
+        # yield fp.PartialResponse(text="# Welcome to PlayPoker \n\n")
 
 
         # last_message = request.query[-1].content.lower()
