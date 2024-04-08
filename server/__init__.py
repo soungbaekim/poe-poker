@@ -199,7 +199,7 @@ class PokerBot(fp.PoeBot):
         # print('*** RESPONSE ***', all)
         # response = json.loads(all)
 
-        # yield all
+        # yield response
 
         # print('*** EVENT ***', response["event"])
 
